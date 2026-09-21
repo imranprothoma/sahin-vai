@@ -1,10 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
 
-    /* ================= JS READY ================= */
-
-    document.body.classList.add("js-ready");
-
-
     /* ================= MOBILE MENU ================= */
 
     const menuBtn = document.getElementById("menuBtn");
@@ -15,140 +10,137 @@ document.addEventListener("DOMContentLoaded", function () {
         menuBtn.addEventListener("click", function () {
             navMenu.classList.toggle("show");
 
-            if (navMenu.classList.contains("show")) {
-                menuBtn.textContent = "✕";
-            } else {
-                menuBtn.textContent = "☰";
-            }
+            menuBtn.textContent =
+                navMenu.classList.contains("show") ? "✕" : "☰";
         });
 
+        const navLinks = document.querySelectorAll("#navMenu a");
 
-        document.querySelectorAll("#navMenu a").forEach(function (link) {
-
+        navLinks.forEach(function (link) {
             link.addEventListener("click", function () {
                 navMenu.classList.remove("show");
                 menuBtn.textContent = "☰";
             });
-
         });
-
     }
 
 
     /* ================= SCROLL ANIMATION ================= */
 
-    const animatedElements = document.querySelectorAll(
+    const elements = document.querySelectorAll(
         ".reveal, .reveal-left, .reveal-right"
     );
 
-    const observer = new IntersectionObserver(
-        function (entries) {
+    if ("IntersectionObserver" in window) {
 
-            entries.forEach(function (entry) {
+        const observer = new IntersectionObserver(
+            function (entries) {
 
-                if (entry.isIntersecting) {
+                entries.forEach(function (entry) {
 
-                    entry.target.classList.add("active");
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add("active");
+                        observer.unobserve(entry.target);
+                    }
 
-                    observer.unobserve(entry.target);
-                }
+                });
 
-            });
+            },
+            {
+                threshold: 0.1
+            }
+        );
 
-        },
-        {
-            threshold: 0.12
-        }
-    );
+        elements.forEach(function (element) {
+            observer.observe(element);
+        });
 
+    } else {
 
-    animatedElements.forEach(function (element) {
-        observer.observe(element);
-    });
+        /* Old browser হলে সবকিছু visible থাকবে */
+
+        elements.forEach(function (element) {
+            element.classList.add("active");
+        });
+    }
 
 
     /* ================= QUANTITY ================= */
 
-    const minusBtn = document.getElementById("minus");
-    const plusBtn = document.getElementById("plus");
-    const quantityInput = document.getElementById("quantity");
+    const minus = document.getElementById("minus");
+    const plus = document.getElementById("plus");
+    const quantity = document.getElementById("quantity");
     const total = document.getElementById("total");
 
-    const productPrice = 999;
+    const price = 999;
 
 
     function updateTotal() {
 
-        let quantity = parseInt(quantityInput.value);
+        if (!quantity || !total) return;
 
-        if (isNaN(quantity) || quantity < 1) {
-            quantity = 1;
+        let qty = parseInt(quantity.value);
+
+        if (isNaN(qty) || qty < 1) {
+            qty = 1;
         }
 
-        if (quantity > 10) {
-            quantity = 10;
+        if (qty > 10) {
+            qty = 10;
         }
 
-        quantityInput.value = quantity;
+        quantity.value = qty;
 
-        total.textContent = (
-            productPrice * quantity
-        ).toLocaleString("en-BD");
-
+        total.textContent =
+            (price * qty).toLocaleString("en-BD");
     }
 
 
-    if (minusBtn) {
+    if (minus && quantity) {
 
-        minusBtn.addEventListener("click", function () {
+        minus.addEventListener("click", function () {
 
-            let quantity = parseInt(quantityInput.value);
+            let qty = parseInt(quantity.value);
 
-            if (quantity > 1) {
-                quantity--;
+            if (qty > 1) {
+                qty--;
             }
 
-            quantityInput.value = quantity;
+            quantity.value = qty;
 
             updateTotal();
-
         });
-
     }
 
 
-    if (plusBtn) {
+    if (plus && quantity) {
 
-        plusBtn.addEventListener("click", function () {
+        plus.addEventListener("click", function () {
 
-            let quantity = parseInt(quantityInput.value);
+            let qty = parseInt(quantity.value);
 
-            if (quantity < 10) {
-                quantity++;
+            if (qty < 10) {
+                qty++;
             }
 
-            quantityInput.value = quantity;
+            quantity.value = qty;
 
             updateTotal();
-
         });
-
     }
 
 
     /* ================= ORDER FORM ================= */
 
     const orderForm = document.getElementById("orderForm");
-    const successMessage = document.getElementById("successMessage");
-    const newOrderBtn = document.getElementById("newOrder");
-
+    const successMessage =
+        document.getElementById("successMessage");
 
     if (orderForm) {
 
-        orderForm.addEventListener("submit", function (event) {
+        orderForm.addEventListener("submit", function (e) {
 
-            event.preventDefault();
-
+            e.preventDefault();
 
             const name =
                 document.getElementById("name").value.trim();
@@ -159,19 +151,16 @@ document.addEventListener("DOMContentLoaded", function () {
             const address =
                 document.getElementById("address").value.trim();
 
-            const quantity =
-                parseInt(document.getElementById("quantity").value);
+            const qty =
+                parseInt(quantity.value);
 
-
-            /* Bangladesh phone validation */
 
             const phonePattern = /^01[3-9]\d{8}$/;
-
 
             if (!phonePattern.test(phone)) {
 
                 alert(
-                    "Please enter a valid Bangladesh phone number.\nExample: 01712345678"
+                    "সঠিক বাংলাদেশি মোবাইল নম্বর দিন।\nউদাহরণ: 01712345678"
                 );
 
                 return;
@@ -186,81 +175,96 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 phone: phone,
 
-                quantity: quantity,
+                quantity: qty,
 
                 address: address,
 
-                total: productPrice * quantity,
+                total: price * qty,
 
                 date: new Date().toLocaleString("en-BD")
-
             };
 
 
-            /* Save order in browser */
+            let orders = [];
 
-            let orders =
-                JSON.parse(
-                    localStorage.getItem("dragonPowarOrders")
-                ) || [];
+            try {
+
+                orders =
+                    JSON.parse(
+                        localStorage.getItem("dragonPowarOrders")
+                    ) || [];
+
+            } catch (error) {
+
+                orders = [];
+            }
 
 
             orders.push(order);
 
 
-            localStorage.setItem(
-                "dragonPowarOrders",
-                JSON.stringify(orders)
-            );
+            try {
 
+                localStorage.setItem(
+                    "dragonPowarOrders",
+                    JSON.stringify(orders)
+                );
 
-            /* Show success */
+            } catch (error) {
+
+                console.log("Storage error:", error);
+            }
+
 
             orderForm.style.display = "none";
 
-            successMessage.style.display = "block";
-
-            successMessage.scrollIntoView({
-                behavior: "smooth",
-                block: "center"
-            });
+            if (successMessage) {
+                successMessage.style.display = "block";
+            }
 
         });
-
     }
 
 
     /* ================= NEW ORDER ================= */
 
-    if (newOrderBtn) {
+    const newOrder =
+        document.getElementById("newOrder");
 
-        newOrderBtn.addEventListener("click", function () {
+    if (newOrder) {
 
-            orderForm.reset();
+        newOrder.addEventListener("click", function () {
 
-            quantityInput.value = 1;
+            if (orderForm) {
+                orderForm.reset();
+                orderForm.style.display = "block";
+            }
+
+            if (quantity) {
+                quantity.value = 1;
+            }
 
             updateTotal();
 
-            successMessage.style.display = "none";
-
-            orderForm.style.display = "block";
+            if (successMessage) {
+                successMessage.style.display = "none";
+            }
 
         });
-
     }
 
 
-    /* ================= CURRENT YEAR ================= */
+    /* ================= YEAR ================= */
 
-    const year = document.getElementById("year");
+    const year =
+        document.getElementById("year");
 
     if (year) {
         year.textContent = new Date().getFullYear();
     }
 
 
-    /* ================= INITIAL TOTAL ================= */
+    /* ================= TOTAL ================= */
 
     updateTotal();
 
